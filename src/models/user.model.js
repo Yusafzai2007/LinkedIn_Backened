@@ -44,6 +44,9 @@ userSchema.methods.ispassworcorrect = async function (password) {
 };
 
 userSchema.methods.isaccesstoken = async function () {
+  console.log("ACCESS SECRET:", process.env.ACCESS_TOKEN_SECRET);
+  console.log("ACCESS EXPIRY:", process.env.ACCESS_TOKEN_EXPIRY);
+
   return jwt.sign(
     {
       _id: this._id,
@@ -56,6 +59,9 @@ userSchema.methods.isaccesstoken = async function () {
 };
 
 userSchema.methods.isrefrehtoken = async function () {
+  console.log("REFRESH SECRET:", process.env.REFRESH_TOKEN_SECRET);
+  console.log("REFRESH EXPIRY:", process.env.REFRESH_TOKEN_EXPIRY);
+
   return jwt.sign(
     {
       _id: this._id,

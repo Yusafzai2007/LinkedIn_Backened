@@ -4,14 +4,32 @@ import { apiError } from "../utils/apiError.js";
 import { User } from "../models/user.model.js";
 
 const generateaccesstoken = async (userId) => {
-  try {
-    const user = await User.findById(userId);
-    const isaccesstoken = await user.isaccesstoken();
-    const isrefrehtoken = await user.isrefrehtoken();
-    return { isaccesstoken, isrefrehtoken };
-  } catch (error) {
-    console.log(`token genrating issue ${error}`);
+  console.log("1. generateaccesstoken START");
+
+  const user = await User.findById(userId);
+
+  console.log("2. USER FOUND:", user?._id);
+
+  if (!user) {
+    throw new apiError(404, "User not found");
   }
+
+  console.log("3. Calling access token method");
+
+  const isaccesstoken = await user.isaccesstoken();
+
+  console.log("4. Access token generated:", isaccesstoken);
+
+  console.log("5. Calling refresh token method");
+
+  const isrefrehtoken = await user.isrefrehtoken();
+
+  console.log("6. Refresh token generated:", isrefrehtoken);
+
+  return {
+    isaccesstoken,
+    isrefrehtoken,
+  };
 };
 
 const createaccount = asynhandler(async (req, res) => {
@@ -45,9 +63,12 @@ const createaccount = asynhandler(async (req, res) => {
 });
 
 const user_login = asynhandler(async (req, res) => {
+  console.log("LOGIN CONTROLLER START");
+
   const { email, password } = req.body;
+
   if (!email || !password) {
-    throw new apiError(400, "all filed are required");
+    throw new apiError(400, "all field are required");
   }
 
   const find_email = await User.findOne({ email });
@@ -57,16 +78,18 @@ const user_login = asynhandler(async (req, res) => {
   }
 
   const check_password = await find_email.ispassworcorrect(password);
+
   if (!check_password) {
     throw new apiError(404, "password not match");
   }
 
-  const { isaccesstoken, isrefrehtoken } = await generateaccesstoken(
-    find_email._id,
-  );
+  console.log("LOGIN SUCCESS - BEFORE TOKEN");
 
-  console.log("isaccesstoken", isaccesstoken);
-  console.log("isrefrehtoken", isrefrehtoken);
+  const { isaccesstoken, isrefrehtoken } =
+    await generateaccesstoken(find_email._id);
+
+  console.log("ACCESS TOKEN:", isaccesstoken);
+  console.log("REFRESH TOKEN:", isrefrehtoken);
 
   const userdata = await User.findById(find_email._id).select("-password");
 
@@ -79,8 +102,17 @@ const user_login = asynhandler(async (req, res) => {
     .status(200)
     .cookie("isaccesstoken", isaccesstoken, option)
     .cookie("isrefrehtoken", isrefrehtoken, option)
-    .json(new apiResponse(200, userdata, "user login successfully"));
-});
+.json(
+  new apiResponse(
+    200,
+    {
+      user: userdata,
+      accessToken: isaccesstoken,
+      refreshToken: isrefrehtoken
+    },
+    "user login successfully"
+  )
+);});
 
 const get_user = asynhandler(async (req, res) => {
   const getusers = await User.find();
